@@ -1,5 +1,4 @@
 # AuthZen 🔐
-
 A secure, extensible authentication and authorization backend for modern applications built with **Spring Boot**. Designed for scalability and real-world integration, this project includes **JWT**, **OAuth2**, **role-based access**, **admin controls**, and **token lifecycle management**.
 
 ---
