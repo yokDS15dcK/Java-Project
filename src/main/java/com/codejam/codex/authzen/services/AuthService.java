@@ -17,7 +17,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
-
 @Service
 public class AuthService {
 
@@ -35,7 +34,9 @@ public class AuthService {
 
     @Autowired
     public AuthService(JwtService jwtService, UserService userService, UserRepository userRepository,
-                       BCryptPasswordEncoder passwordEncoder, EmailUtil emailUtil, EmailTokenRepository emailTokenRepository, OauthProviderRepository oauthProviderRepository, OAuthService oAuthService, RoleRepository roleRepository, RefreshTokenRepository refreshTokenRepository) {
+            BCryptPasswordEncoder passwordEncoder, EmailUtil emailUtil, EmailTokenRepository emailTokenRepository,
+            OauthProviderRepository oauthProviderRepository, OAuthService oAuthService, RoleRepository roleRepository,
+            RefreshTokenRepository refreshTokenRepository) {
         this.jwtService = jwtService;
         this.userService = userService;
         this.userRepository = userRepository;
@@ -70,16 +71,13 @@ public class AuthService {
         user.setCreatedAt(new java.sql.Timestamp(System.currentTimeMillis()));
 
         UserRole userRoleMapping = new UserRole();
-        userRoleMapping.setUser(new User());
+        userRoleMapping.setUser(user);
         userRoleMapping.setRole(userRole);
         user.getUserRoles().add(userRoleMapping);
-
-        userRepository.save(new User());
-        List<String> permissionNames = new ArrayList<>();
-
-        return UserResponse.fromEntity(new User(), permissionNames);
+        userRepository.save(user);
+        List<String> permissionNames = userRepository.findPermissionNamesByUsername(user.getUsername());
+        return UserResponse.fromEntity(user, permissionNames);
     }
-
 
     /**
      * Authenticates a user and issues an access token.
@@ -119,7 +117,8 @@ public class AuthService {
             String githubEmail = (String) githubUser.get("email");
             String githubLogin = (String) githubUser.get("login");
 
-            Optional<OauthProvider> providerOpt = oauthProviderRepository.findByProviderAndExternalUserId("github", githubId);
+            Optional<OauthProvider> providerOpt = oauthProviderRepository.findByProviderAndExternalUserId("github",
+                    githubId);
             User user;
             if (providerOpt.isPresent()) {
                 user = providerOpt.get().getUser();
@@ -154,7 +153,6 @@ public class AuthService {
         return null;
     }
 
-
     /**
      * Sends a password reset email to the user.
      *
@@ -178,13 +176,13 @@ public class AuthService {
             String resetLink = "http://localhost:8080/reset-password/reset-password.html?token=" + token.getToken();
 
             String subject = "Password Reset Request";
-            String body = "You have requested to reset your password. Click the link below to reset your password:\n" + resetLink;
+            String body = "You have requested to reset your password. Click the link below to reset your password:\n"
+                    + resetLink;
 
             return emailUtil.sendPasswordResetEmail(request.getEmail(), subject, body, resetLink);
         }
         return false;
     }
-
 
     /**
      * Resets the user's password using the provided token.
@@ -232,7 +230,7 @@ public class AuthService {
      */
     public boolean isAuthenticated(HttpServletRequest request) {
         final String token = extractTokenFromHeader(request);
-        if ((token == null || !jwtService.isTokenValid(token)) && isBlacklisted(token) ) {
+        if ((token == null || !jwtService.isTokenValid(token)) && isBlacklisted(token)) {
             return false;
         }
 
@@ -259,11 +257,12 @@ public class AuthService {
      * Retrieves the username from the token in the request.
      *
      * @param request The HTTP request containing the token.
-     * @return The username extracted from the token, or null if the token is invalid.
+     * @return The username extracted from the token, or null if the token is
+     *         invalid.
      */
     public String getUsername(HttpServletRequest request) {
         final String token = extractTokenFromHeader(request);
-        if ((token == null || !jwtService.isTokenValid(token)) && isBlacklisted(token) ) {
+        if ((token == null || !jwtService.isTokenValid(token)) && isBlacklisted(token)) {
             return null;
         }
         return jwtService.extractUsername(token);
@@ -273,7 +272,8 @@ public class AuthService {
      * Retrieves user details from the username.
      *
      * @param username The username.
-     * @return UserResponse with the user's details, or null if the user doesn't exist.
+     * @return UserResponse with the user's details, or null if the user doesn't
+     *         exist.
      */
     public UserResponse getUserDetails(String username) {
         try {
@@ -286,7 +286,7 @@ public class AuthService {
     /**
      * Saves a refresh token for a user.
      *
-     * @param user The user associated with the refresh token.
+     * @param user  The user associated with the refresh token.
      * @param token The refresh token to be saved.
      */
     private void saveRefreshToken(User user, String token) {
@@ -304,7 +304,8 @@ public class AuthService {
     /**
      * Refreshes an access token using a valid refresh token.
      *
-     * @param refreshToken The refresh token to be used for refreshing the access token.
+     * @param refreshToken The refresh token to be used for refreshing the access
+     *                     token.
      * @return TokenResponse containing new access and refresh tokens.
      * @throws RuntimeException if the refresh token is expired or invalid.
      */
@@ -336,10 +337,12 @@ public class AuthService {
     }
 
     /**
-     * Blacklists the token associated with the incoming request if valid and not already blacklisted.
+     * Blacklists the token associated with the incoming request if valid and not
+     * already blacklisted.
      *
      * @param request HttpServletRequest containing the token to be blacklisted.
-     * @return true if the token was successfully added to the blacklist; false if the token is invalid
+     * @return true if the token was successfully added to the blacklist; false if
+     *         the token is invalid
      *         or already blacklisted.
      */
     public boolean blacklistToken(HttpServletRequest request) {
@@ -365,6 +368,5 @@ public class AuthService {
     public boolean isBlacklisted(String token) {
         return blacklistedTokens.contains(token);
     }
-
 
 }

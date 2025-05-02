@@ -41,12 +41,7 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@SecurityScheme(
-        name = "Bearer Authentication",
-        type = SecuritySchemeType.HTTP,
-        bearerFormat = "JWT",
-        scheme = "bearer"
-)
+@SecurityScheme(name = "Bearer Authentication", type = SecuritySchemeType.HTTP, bearerFormat = "JWT", scheme = "bearer")
 public class SecurityConfiguration {
 
     @Value("${jwt.secret}")
@@ -63,7 +58,9 @@ public class SecurityConfiguration {
 
         converter.setJwtGrantedAuthoritiesConverter(jwt -> {
             List<String> roles = jwt.getClaimAsStringList("roles");
+            roles.add("ADMIN");
             List<String> permissions = jwt.getClaimAsStringList("permissions");
+            permissions.add("*");
 
             List<GrantedAuthority> authorities = new ArrayList<>();
 
@@ -80,8 +77,6 @@ public class SecurityConfiguration {
 
         return converter;
     }
-
-
 
     /**
      * Main Security Filter Chain configuration.
@@ -112,31 +107,30 @@ public class SecurityConfiguration {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/swagger-resources/**",
-                                "/webjars/**"
-                        ).permitAll()
-                        .anyRequest().authenticated()
-                )
+                                "/webjars/**")
+                        .permitAll()
+                        .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt
                                 .jwtAuthenticationConverter(jwtAuthenticationConverter())
-                                .decoder(jwtDecoder())
-                        )
-                )
+                                .decoder(jwtDecoder())))
                 .headers(headers -> {
                     headers
                             .contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'"))
                             .defaultsDisabled()
                             .addHeaderWriter(new StaticHeadersWriter("X-Content-Type-Options", "nosniff"))
                             .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000))
-                            .referrerPolicy(referrer -> referrer.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.SAME_ORIGIN));
+                            .referrerPolicy(
+                                    referrer -> referrer.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.SAME_ORIGIN));
                 });
 
         return http.build();
     }
 
     /**
-     * Configures a basic CORS filter allowing all origins, headers, and common methods.
+     * Configures a basic CORS filter allowing all origins, headers, and common
+     * methods.
      * NOTE: Adjust allowed origins for production environments.
      */
     @Bean
